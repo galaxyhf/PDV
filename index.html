@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDV Web</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>PDV Web</h1>
+    <div class="status">
+      <span id="clock" aria-live="polite"></span>
+      <span class="separator">•</span>
+      <span>Operador: <strong>Caixa 01</strong></span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="left-pane">
+      <form id="scanner-form" autocomplete="off" class="scanner">
+        <label for="barcode"><strong>Código de barras</strong></label>
+        <input id="barcode" name="barcode" type="text" placeholder="Digite o código" autofocus />
+        <div class="scanner-actions">
+          <button type="button" id="open-search" class="btn secondary">Localizar produto (F2)</button>
+          <button type="button" id="cancel-sale" class="btn danger">Cancelar venda (F4)</button>
+        </div>
+      </form>
+
+      <div class="last-item" aria-live="polite">
+        <h2>Último item lançado</h2>
+        <div id="last-item-info">—</div>
+      </div>
+
+      <div class="totals" aria-live="polite">
+        <span>Total</span>
+        <strong id="grand-total">R$ 0,00</strong>
+      </div>
+
+      <div class="payment-actions">
+        <button id="open-payment" class="btn success">Selecionar forma de pagamento (F8)</button>
+      </div>
+    </section>
+
+    <section class="right-pane">
+      <h2>Itens da venda</h2>
+      <div class="table-wrap">
+        <table class="items" aria-describedby="grand-total">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Nome</th>
+              <th>Un.</th>
+              <th>Qtd</th>
+              <th>Preço</th>
+              <th>Total</th>
+              <th>Ação</th>
+            </tr>
+          </thead>
+          <tbody id="items-body"></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="5" class="align-right">Total</td>
+              <td id="table-total">R$ 0,00</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal: Busca de produto -->
+  <dialog id="search-dialog" aria-labelledby="search-title">
+    <form method="dialog" class="modal">
+      <header>
+        <h3 id="search-title">Localizar produto</h3>
+      </header>
+      <div class="modal-body">
+        <input id="search-input" type="text" placeholder="Digite parte do nome" />
+        <ul id="search-results" class="list"></ul>
+      </div>
+      <footer>
+        <button class="btn secondary" value="cancel">Fechar (Esc)</button>
+      </footer>
+    </form>
+  </dialog>
+
+<!-- Modal: Pagamento -->
+<dialog id="payment-dialog" aria-labelledby="payment-title">
+  <form method="dialog" class="modal" id="payment-form">
+    <header>
+      <h3 id="payment-title">Pagamento</h3>
+    </header>
+
+<div class="modal-body">
+  <div class="method-grid">
+    <button type="button" class="btn method" data-method="cash">
+      <span class="kbd">F1</span> Dinheiro
+    </button>
+    <button type="button" class="btn method" data-method="debit">
+      <span class="kbd">F2</span> Cartão Débito
+    </button>
+    <button type="button" class="btn method" data-method="credit">
+      <span class="kbd">F3</span> Cartão Crédito
+    </button>
+    <button type="button" class="btn method" data-method="pix">
+      <span class="kbd">F4</span> PIX
+    </button>
+  </div>
+
+  <div class="method-current">
+    Forma selecionada: <strong id="method-label">Dinheiro</strong>
+  </div>
+
+  <div class="grid">
+    <div id="installments-wrap" class="hidden">
+      <label for="installments">Parcelas (crédito)</label>
+      <select id="installments">
+        <option value="1">1x</option>
+        <option value="2">2x</option>
+        <option value="3">3x</option>
+        <option value="4">4x</option>
+        <option value="5">5x</option>
+      </select>
+    </div>
+
+    <!-- Mostra só no dinheiro -->
+    <div id="cash-wrap">
+      <label for="amount-received">Valor recebido</label>
+      <input id="amount-received" type="number" min="0" step="0.01" placeholder="0,00" />
+      <label style="margin-top:8px; display:block;">Troco</label>
+      <output id="change">R$ 0,00</output>
+    </div>
+  </div>
+</div>
+
+    <footer>
+      <button class="btn secondary" value="cancel">Cancelar</button>
+      <button class="btn success" id="confirm-payment" value="confirm">Confirmar (Enter)</button>
+    </footer>
+  </form>
+</dialog>
+
+  <template id="row-template">
+    <tr>
+      <td class="code"></td>
+      <td class="name"></td>
+      <td class="unit"></td>
+      <td class="qty">
+        <input type="number" min="1" step="1" value="1" aria-label="Quantidade" />
+      </td>
+      <td class="price"></td>
+      <td class="total"></td>
+      <td class="actions">
+        <button class="btn icon danger" aria-label="Remover item">✕</button>
+      </td>
+    </tr>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
