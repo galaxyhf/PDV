@@ -24,6 +24,7 @@
         <div class="scanner-actions">
           <button type="button" id="open-search" class="btn secondary">Localizar produto (F2)</button>
           <button type="button" id="cancel-sale" class="btn danger">Cancelar venda (F4)</button>
+          <button type="button" id="open-add-product" class="btn">Cadastrar produto (F6)</button>
         </div>
       </form>
 
@@ -86,61 +87,87 @@
     </form>
   </dialog>
 
-<!-- Modal: Pagamento -->
-<dialog id="payment-dialog" aria-labelledby="payment-title">
-  <form method="dialog" class="modal" id="payment-form">
-    <header>
-      <h3 id="payment-title">Pagamento</h3>
-    </header>
+  <!-- Modal: Pagamento -->
+  <dialog id="payment-dialog" aria-labelledby="payment-title">
+    <form method="dialog" class="modal" id="payment-form">
+      <header>
+        <h3 id="payment-title">Pagamento</h3>
+      </header>
 
-<div class="modal-body">
-  <div class="method-grid">
-    <button type="button" class="btn method" data-method="cash">
-      <span class="kbd">F1</span> Dinheiro
-    </button>
-    <button type="button" class="btn method" data-method="debit">
-      <span class="kbd">F2</span> Cartão Débito
-    </button>
-    <button type="button" class="btn method" data-method="credit">
-      <span class="kbd">F3</span> Cartão Crédito
-    </button>
-    <button type="button" class="btn method" data-method="pix">
-      <span class="kbd">F4</span> PIX
-    </button>
-  </div>
+      <div class="modal-body">
+        <div class="method-grid">
+          <button type="button" class="btn method" data-method="cash">
+            <span class="kbd">F1</span> Dinheiro
+          </button>
+          <button type="button" class="btn method" data-method="debit">
+            <span class="kbd">F2</span> Cartão Débito
+          </button>
+          <button type="button" class="btn method" data-method="credit">
+            <span class="kbd">F3</span> Cartão Crédito
+          </button>
+          <button type="button" class="btn method" data-method="pix">
+            <span class="kbd">F4</span> PIX
+          </button>
+        </div>
 
-  <div class="method-current">
-    Forma selecionada: <strong id="method-label">Dinheiro</strong>
-  </div>
+        <div class="method-current">
+          Forma selecionada: <strong id="method-label">Dinheiro</strong>
+        </div>
 
-  <div class="grid">
-    <div id="installments-wrap" class="hidden">
-      <label for="installments">Parcelas (crédito)</label>
-      <select id="installments">
-        <option value="1">1x</option>
-        <option value="2">2x</option>
-        <option value="3">3x</option>
-        <option value="4">4x</option>
-        <option value="5">5x</option>
-      </select>
-    </div>
+        <div class="grid">
+          <div id="installments-wrap" class="hidden">
+            <label for="installments">Parcelas (crédito)</label>
+            <select id="installments">
+              <option value="1">1x</option>
+              <option value="2">2x</option>
+              <option value="3">3x</option>
+              <option value="4">4x</option>
+              <option value="5">5x</option>
+            </select>
+          </div>
 
-    <!-- Mostra só no dinheiro -->
-    <div id="cash-wrap">
-      <label for="amount-received">Valor recebido</label>
-      <input id="amount-received" type="number" min="0" step="0.01" placeholder="0,00" />
-      <label style="margin-top:8px; display:block;">Troco</label>
-      <output id="change">R$ 0,00</output>
-    </div>
-  </div>
-</div>
+          <!-- Mostra só no dinheiro -->
+          <div id="cash-wrap">
+            <label for="amount-received">Valor recebido</label>
+            <input id="amount-received" type="number" min="0" step="0.01" placeholder="0,00" />
+            <label style="margin-top:8px; display:block;">Troco</label>
+            <output id="change">R$ 0,00</output>
+          </div>
+        </div>
+      </div>
 
-    <footer>
-      <button class="btn secondary" value="cancel">Cancelar</button>
-      <button class="btn success" id="confirm-payment" value="confirm">Confirmar (Enter)</button>
-    </footer>
-  </form>
-</dialog>
+      <footer>
+        <button class="btn secondary" value="cancel">Cancelar</button>
+        <button class="btn success" id="confirm-payment" value="confirm">Confirmar (Enter)</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- ✅ Modal: Cadastro de Produto (fora do payment-dialog) -->
+  <dialog id="add-product-dialog" aria-labelledby="add-product-title">
+    <form method="dialog" class="modal" id="add-product-form">
+      <header>
+        <h3 id="add-product-title">Cadastrar Produto</h3>
+      </header>
+      <div class="modal-body">
+        <label for="prod-code">Código de Barras</label>
+        <input id="prod-code" type="text" required />
+
+        <label for="prod-name">Nome</label>
+        <input id="prod-name" type="text" required />
+
+        <label for="prod-unit">Unidade</label>
+        <input id="prod-unit" type="text" placeholder="PC, UN, CX..." required />
+
+        <label for="prod-price">Preço</label>
+        <input id="prod-price" type="number" step="0.01" min="0" required />
+      </div>
+      <footer>
+        <button class="btn secondary" value="cancel">Cancelar (Esc)</button>
+        <button class="btn success" id="save-product" value="confirm">Salvar (Enter)</button>
+      </footer>
+    </form>
+  </dialog>
 
   <template id="row-template">
     <tr>

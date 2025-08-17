@@ -1,16 +1,41 @@
-/* ==== Catálogo (mock) ==== */
-const catalog = [
-  { code: '7891000367263', name: 'Arroz Premium 5kg', unit: 'PC', price: 22.90 },
+/* ==== Catálogo com persistência (localStorage) ==== */
+const CATALOG_KEY = 'pdv_catalog_v1';
+
+const defaultCatalog = [
+  { code: '7891000367263', name: 'Arroz Premium 5kg', unit: 'PC', price: 30.90 },
   { code: '7894900011517', name: 'Feijão Carioca 1kg', unit: 'PC', price: 7.49 },
   { code: '7891000100105', name: 'Açúcar Refinado 1kg', unit: 'PC', price: 4.39 },
-  { code: '7891910000197', name: 'Café Torrado 500g', unit: 'PC', price: 13.99 },
-  { code: '7892840810052', name: 'Leite Integral 1L', unit: 'UN', price: 4.89 },
+  { code: '7891910000197', name: 'Café Torrado 500g', unit: 'PC', price: 23.99 },
+  { code: '7892840810052', name: 'Leite Integral Piracanjuba 1L', unit: 'UN', price: 5.89 },
   { code: '7891910000234', name: 'Biscoito Maizena 400g', unit: 'PC', price: 5.59 },
   { code: '7891000012348', name: 'Óleo de Soja 900ml', unit: 'UN', price: 6.29 },
   { code: '7891234512345', name: 'Chocolate 90g', unit: 'PC', price: 4.99 },
-  { code: '7899876500012', name: 'Refrigerante 2L', unit: 'UN', price: 8.49 },
+  { code: '7899876500012', name: 'Refrigerante 2L', unit: 'UN', price: 9.49 },
   { code: '7896543210007', name: 'Detergente 500ml', unit: 'UN', price: 2.59 }
 ];
+
+function loadCatalog(){
+  try{
+    const raw = localStorage.getItem(CATALOG_KEY);
+    if(!raw) return [...defaultCatalog];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [...defaultCatalog];
+  }catch{
+    return [...defaultCatalog];
+  }
+}
+
+function saveCatalog(arr){
+  try{
+    localStorage.setItem(CATALOG_KEY, JSON.stringify(arr));
+  }catch(e){
+    console.error('[PDV] Falha ao salvar catálogo:', e);
+  }
+}
+
+/* catálogo mutável em memória */
+let catalog = loadCatalog();
+
 const findByCode   = code  => catalog.find(p => p.code === String(code).trim());
 const searchByName = query => {
   const q = String(query).trim().toLowerCase();
@@ -40,6 +65,15 @@ const refs = {
   cancelSale: document.getElementById('cancel-sale'),
   openPaymentBtn: document.getElementById('open-payment'),
 
+  // Cadastro de produto
+  openAddProductBtn: document.getElementById('open-add-product'),
+  addProductDlg: document.getElementById('add-product-dialog'),
+  addProductForm: document.getElementById('add-product-form'),
+  prodCode: document.getElementById('prod-code'),
+  prodName: document.getElementById('prod-name'),
+  prodUnit: document.getElementById('prod-unit'),
+  prodPrice: document.getElementById('prod-price'),
+
   // Pagamento
   paymentDlg: document.getElementById('payment-dialog'),
   methodButtons: document.querySelectorAll('.method-grid .method'),
@@ -54,6 +88,77 @@ const refs = {
 };
 setClock(refs.clock);
 
+/* ==== Cadastro de Produto (F6) ==== */
+function openAddProduct(){
+  const dlg  = refs.addProductDlg;
+  const form = refs.addProductForm;
+  const code = refs.prodCode;
+
+  if(!dlg || !form || !code){
+    console.error('[PDV] Modal de cadastro não encontrado. Confirme os IDs:', {
+      dlg: !!dlg, form: !!form, code: !!code
+    });
+    return;
+  }
+  try { form.reset(); } catch {}
+  openDialog(dlg);
+  code.focus();
+}
+
+// Botão "Cadastrar produto"
+if(refs.openAddProductBtn){
+  refs.openAddProductBtn.addEventListener('click', openAddProduct);
+} else {
+  console.error('[PDV] Botão #open-add-product não encontrado no DOM.');
+}
+
+// Atalho F6 (só quando o modal de pagamento NÃO está aberto)
+document.addEventListener('keydown', (e)=>{
+  if(!refs.paymentDlg?.open && e.key === 'F6'){
+    e.preventDefault();
+    openAddProduct();
+  }
+});
+
+// Submit do formulário -> salva no catálogo e persiste
+if(refs.addProductForm){
+  refs.addProductForm.addEventListener('submit', (e)=>{
+    e.preventDefault();
+
+    const code  = refs.prodCode?.value?.trim();
+    const name  = refs.prodName?.value?.trim();
+    const unit  = refs.prodUnit?.value?.trim();
+    const price = parseFloat(refs.prodPrice?.value);
+
+    if(!code || !name || !unit || isNaN(price)){
+      alert('Preencha todos os campos corretamente.');
+      return;
+    }
+
+    // Upsert no catálogo
+    const idx = catalog.findIndex(p => p.code === code);
+    if(idx >= 0){
+      if(!confirm('Esse código já existe. Deseja sobrescrever o produto?')) return;
+      catalog[idx] = { code, name, unit, price };
+    }else{
+      catalog.push({ code, name, unit, price });
+    }
+
+    // PERSISTE no localStorage
+    saveCatalog(catalog);
+
+    alert(`Produto "${name}" cadastrado no catálogo!`);
+    try { closeDialog(refs.addProductDlg); } catch { refs.addProductDlg?.close?.(); }
+
+    // Qualquer tela de busca aberta deve refletir o novo catálogo
+    if(refs.searchDlg?.open){
+      refs.searchInput.dispatchEvent(new Event('input'));
+    }
+  });
+} else {
+  console.error('[PDV] Formulário #add-product-form não encontrado no DOM.');
+}
+
 /* ==== Estado da venda ==== */
 const sale = { items: [] }; // { code, name, unit, price, qty }
 let selectedIndex = -1;     // índice do item selecionado para ↑/↓/DEL
@@ -64,7 +169,6 @@ function addItem(product, qty = 1){
   if(existing){
     existing.qty += qty;
     redraw();
-    // ao somar em item existente, selecionar ele
     selectedIndex = sale.items.findIndex(i => i.code === product.code);
     updateSelectionHighlight();
     announceLast(existing);
@@ -72,7 +176,6 @@ function addItem(product, qty = 1){
   }
   sale.items.push({ ...product, qty });
   redraw();
-  // selecionar o último lançado
   selectedIndex = sale.items.length - 1;
   updateSelectionHighlight();
   announceLast(product, qty);
@@ -97,21 +200,17 @@ function redraw(){
     qtyInput.addEventListener('change', () => {
       item.qty = Math.max(1, parseInt(qtyInput.value || '1', 10));
       redraw();
-      // manter seleção no mesmo índice após redraw
       updateSelectionHighlight();
     });
-    // focar no input => selecionar a linha
     qtyInput.addEventListener('focus', () => {
       selectedIndex = idx;
       updateSelectionHighlight();
     });
 
-    // remover item via botão
     row.querySelector('.btn.icon.danger').addEventListener('click', () => {
       removeSelected(idx);
     });
 
-    // clicar na linha => seleciona
     row.addEventListener('click', () => {
       selectedIndex = idx;
       updateSelectionHighlight();
@@ -119,7 +218,6 @@ function redraw(){
 
     refs.itemsBody.appendChild(row);
   });
-  // corrigir selectedIndex se saiu do range
   if(selectedIndex >= sale.items.length) selectedIndex = sale.items.length - 1;
   if(sale.items.length === 0) selectedIndex = -1;
 
@@ -136,13 +234,10 @@ function updateTotals(){
 
 /* ==== Seleção visual e navegação ↑/↓ ==== */
 function updateSelectionHighlight(){
-  // limpa
   [...refs.itemsBody.children].forEach(tr => tr.classList.remove('selected'));
-  // aplica
   if(selectedIndex >= 0 && refs.itemsBody.children[selectedIndex]){
     const tr = refs.itemsBody.children[selectedIndex];
     tr.classList.add('selected');
-    // garantir visível ao navegar
     tr.scrollIntoView({ block: 'nearest' });
   }
 }
@@ -155,7 +250,6 @@ function selectNext(delta){
 function removeSelected(idx = selectedIndex){
   if(idx < 0 || idx >= sale.items.length) return;
   sale.items.splice(idx, 1);
-  // ajustar índice após remoção
   if(idx >= sale.items.length) selectedIndex = sale.items.length - 1;
   else selectedIndex = idx;
   redraw();
@@ -225,6 +319,11 @@ function setMethod(method){
   }else{
     updateChange();
   }
+
+  // Foco automático em crédito
+  if(method === 'credit'){
+    setTimeout(()=> refs.installments?.focus(), 0);
+  }
 }
 
 function openPayment(){
@@ -240,6 +339,25 @@ refs.openPaymentBtn.addEventListener('click', openPayment);
 // Clique nos botões de forma
 refs.methodButtons.forEach(btn => btn.addEventListener('click', ()=> setMethod(btn.dataset.method)));
 
+/* ==== Helpers de parcelas (Crédito) ==== */
+function getInstallmentValues(){
+  return [...refs.installments.options].map(op => parseInt(op.value, 10));
+}
+function setInstallmentsByNumber(n){
+  const values = getInstallmentValues();
+  if(values.includes(n)){
+    refs.installments.value = String(n);
+    return true;
+  }
+  return false;
+}
+function bumpInstallments(delta){
+  const values = getInstallmentValues();
+  const cur = parseInt(refs.installments.value || values[0], 10);
+  const idx = Math.max(0, Math.min(values.length - 1, values.indexOf(cur) + delta));
+  refs.installments.value = String(values[idx]);
+}
+
 /* ==== Atalhos de teclado ==== */
 document.addEventListener('keydown', (e)=>{
   const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
@@ -247,7 +365,6 @@ document.addEventListener('keydown', (e)=>{
 
   // Globais do PDV (quando modal de pagamento NÃO está aberto)
   if(!refs.paymentDlg.open){
-    // não roubar setas/DEL quando estiver digitando em inputs
     if(!isTypingField){
       if(e.key === 'ArrowDown'){ e.preventDefault(); selectNext(+1); }
       if(e.key === 'ArrowUp'){ e.preventDefault(); selectNext(-1); }
@@ -265,6 +382,27 @@ document.addEventListener('keydown', (e)=>{
     if(e.key === 'F2'){ e.preventDefault(); setMethod('debit'); }
     if(e.key === 'F3'){ e.preventDefault(); setMethod('credit'); }
     if(e.key === 'F4'){ e.preventDefault(); setMethod('pix'); }
+
+    // Teclado para parcelas quando em crédito
+    if(currentMethod === 'credit'){
+      const isDigitTopRow = e.key >= '1' && e.key <= '9';
+      const isNumpadDigit  = e.code?.startsWith('Numpad') && /\d/.test(e.key);
+      if(isDigitTopRow || isNumpadDigit){
+        const n = parseInt(e.key, 10);
+        if(!Number.isNaN(n)){
+          const ok = setInstallmentsByNumber(n);
+          if(ok){ e.preventDefault(); refs.installments.focus(); }
+        }
+      }
+      if(e.key === 'ArrowUp'){ e.preventDefault(); bumpInstallments(+1); refs.installments.focus(); }
+      if(e.key === 'ArrowDown'){ e.preventDefault(); bumpInstallments(-1); refs.installments.focus(); }
+    }
+
+    // Esc fecha o modal de pagamento
+    if(e.key === 'Escape'){
+      e.preventDefault();
+      try { refs.paymentDlg.close(); } catch { closeDialog(refs.paymentDlg); }
+    }
   }
 });
 
@@ -281,11 +419,20 @@ function updateChange(){
 }
 refs.amountReceived.addEventListener('input', updateChange);
 
-/* ==== Confirmar pagamento -> recibo tipo NFC-e (não fiscal) ==== */
+/* ==== Confirmar pagamento ==== */
 refs.confirmPayment.addEventListener('click', (e)=>{
   const total = updateTotals();
-  const received = parseFloat((refs.amountReceived.value || '0').replace(',', '.')) || 0;
 
+  // PIX -> abre janela com QR e copia/cola
+  if(currentMethod === 'pix'){
+    e.preventDefault();
+    const pix = generatePixData(total);
+    closeDialog(refs.paymentDlg);
+    openPixWindow(pix, sale); // recibo e limpeza acontecem na janela PIX
+    return;
+  }
+
+  const received = parseFloat((refs.amountReceived.value || '0').replace(',', '.')) || 0;
   if(currentMethod === 'cash' && received < total){
     e.preventDefault();
     alert('Valor recebido insuficiente para pagamento em dinheiro.');
@@ -390,6 +537,205 @@ function buildReceiptHTML(data){
 </html>`;
 }
 
+/* ==== PIX dinâmico (BR Code EMV com valor + CRC) ==== */
+
+// sua chave PIX (telefone E.164)
+const PIX_KEY = '+5521975335931';
+const PIX_MERCHANT = 'Caio Goncalves da Silva';
+const PIX_CITY = 'SAO PAULO'; // EMV pede maiúsculas (máx. 15 chars)
+
+/* TLV helpers */
+function tlv(id, value){
+  const v = String(value ?? '');
+  const len = String(v.length).padStart(2, '0');
+  return id + len + v;
+}
+
+/* CRC16-CCITT (polinômio 0x1021, init 0xFFFF) */
+function crc16(payload){
+  let crc = 0xFFFF;
+  for(let i=0;i<payload.length;i++){
+    crc ^= payload.charCodeAt(i) << 8;
+    for(let j=0;j<8;j++){
+      crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
+      crc &= 0xFFFF;
+    }
+  }
+  return crc.toString(16).toUpperCase().padStart(4,'0');
+}
+
+/* Constrói o BR Code PIX com valor */
+function buildPixPayload({ key, merchant, city, txid, amount }){
+  // Merchant Account Information (ID 26)
+  const gui = tlv('00','br.gov.bcb.pix');
+  const keyTLV = tlv('01', key); // chave
+  const mai = tlv('26', gui + keyTLV);
+
+  // Campos obrigatórios e recomendados
+  const payloadFormat = tlv('00','01');        // 000201
+  const merchantCat   = tlv('52','0000');      // 52040000 (sem MCC)
+  const currencyBRL   = tlv('53','986');       // 5303986
+  const amountTLV     = tlv('54', Number(amount).toFixed(2)); // 54xxVALOR
+  const countryBR     = tlv('58','BR');        // 5802BR
+  const nameTLV       = tlv('59', merchant.substring(0,25)); // 59
+  const cityTLV       = tlv('60', city.substring(0,15));     // 60
+
+  // Additional Data Field (ID 62) -> TXID (ID 05)
+  const txidTLV       = tlv('05', txid.substring(0,25));
+  const addDataField  = tlv('62', txidTLV);
+
+  // Monta sem CRC e adiciona o "6304" para calcular
+  const noCRC = payloadFormat + mai + merchantCat + currencyBRL +
+                amountTLV + countryBR + nameTLV + cityTLV + addDataField + '6304';
+  const crc = crc16(noCRC);
+  return noCRC + crc;
+}
+
+/* Gera dados do PIX para a venda atual */
+function generatePixData(total){
+  const amount = (Math.round(total * 100) / 100).toFixed(2);
+  const txid = ('PDV' + Date.now().toString(36).toUpperCase()).slice(-25);
+
+  const payload = buildPixPayload({
+    key: PIX_KEY,
+    merchant: PIX_MERCHANT,
+    city: PIX_CITY,
+    txid,
+    amount
+  });
+
+  return {
+    amount,
+    payload,
+    show: {
+      key: '+55 21 97533-5931',
+      name: PIX_MERCHANT,
+      cpf: '***.789.347-**',       // opcional/visual
+      institution: 'Mercado Pago', // opcional/visual
+      city: 'Teresópolis'
+    }
+  };
+}
+
+/* Abre janela com QR + copia e cola, central grande */
+function openPixWindow(pixData, saleData){
+  const qrURL = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(pixData.payload)}`;
+
+  const grandTotal = saleData.items.reduce((s,i)=> s + i.qty * i.price, 0);
+  const w = window.open('', 'pix');
+
+  const itemsHTML = saleData.items.map(i =>
+    `<tr><td>${i.name}</td><td class="right">${i.qty} ${i.unit}</td><td class="right">${currency.format(i.price*i.qty)}</td></tr>`
+  ).join('');
+
+  w.document.write(`
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Pagamento PIX</title>
+<style>
+  body{font:15px/1.5 -apple-system,Segoe UI,Roboto,Arial;padding:20px;margin:0;color:#111;background:#fafafa;text-align:center}
+  h1{font-size:22px;margin:0 0 10px}
+  .muted{color:#666;font-size:13px;margin-bottom:15px}
+  .card{display:inline-block;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;box-shadow:0 2px 4px rgba(0,0,0,.06)}
+  img{display:block;margin:0 auto 15px}
+  table{width:100%;border-collapse:collapse;margin-top:15px;text-align:left}
+  td{padding:6px 0;vertical-align:top}
+  .right{text-align:right;white-space:nowrap}
+  .total{font-weight:700}
+  .row{display:flex;gap:8px;align-items:center;margin:12px 0}
+  input.copy{flex:1;padding:10px;border:1px solid #d1d5db;border-radius:8px}
+  button{padding:10px 14px;border:0;border-radius:8px;background:#16a34a;color:#fff;cursor:pointer}
+  button.secondary{background:#e5e7eb;color:#111}
+  .actions{display:flex;gap:10px;justify-content:center;margin-top:18px}
+  .info{text-align:left;margin:0 auto;max-width:400px}
+  .label{font-size:12px;color:#6b7280;margin-top:6px;text-align:center}
+</style>
+</head>
+<body>
+  <h1>Escaneie o QR Code para pagar</h1>
+  <div class="muted">Esc fecha • Enter confirma pagamento</div>
+
+  <div class="card">
+    <img src="${qrURL}" alt="QR Code PIX" width="400" height="400" />
+    <div class="label">Valor: R$ ${pixData.amount}</div>
+
+    <div class="info">
+      <p><strong>Chave Pix:</strong> ${pixData.show.key}</p>
+      <p><strong>Nome:</strong> ${pixData.show.name}</p>
+      <p><strong>CPF:</strong> ${pixData.show.cpf}</p>
+      <p><strong>Instituição:</strong> ${pixData.show.institution}</p>
+      <p><strong>Cidade:</strong> ${pixData.show.city}</p>
+    </div>
+
+    <div class="row">
+      <input class="copy" id="copiacola" readonly value="${pixData.payload}">
+      <button class="secondary" id="btnCopy">Copiar</button>
+    </div>
+
+    <table>
+      ${itemsHTML}
+      <tr><td class="total">TOTAL</td><td class="right total">${currency.format(grandTotal)}</td></tr>
+    </table>
+
+    <div class="actions">
+      <button class="secondary" id="btnClose">Cancelar (Esc)</button>
+      <button id="btnOk">Pagamento recebido (Enter)</button>
+    </div>
+  </div>
+
+  <script>
+    const $ = sel => document.querySelector(sel);
+    $('#btnCopy').addEventListener('click', async ()=>{
+      const v = $('#copiacola').value;
+      try{
+        await navigator.clipboard.writeText(v);
+        $('#btnCopy').textContent='Copiado!';
+        setTimeout(()=>$('#btnCopy').textContent='Copiar',1200);
+      }catch{
+        $('#copiacola').select(); document.execCommand('copy');
+      }
+    });
+    $('#btnClose').addEventListener('click', ()=> window.close());
+    $('#btnOk').addEventListener('click', ()=> window.dispatchEvent(new Event('pix-ok')));
+    window.addEventListener('keydown', (e)=>{
+      if(e.key==='Escape'){ e.preventDefault(); window.close(); }
+      if(e.key==='Enter'){ e.preventDefault(); window.dispatchEvent(new Event('pix-ok')); }
+    });
+  </script>
+</body>
+</html>`);
+  w.document.close();
+
+  // Confirmação -> recibo PIX e limpa venda
+  w.addEventListener('pix-ok', ()=>{
+    if(window.buildReceiptHTML){
+      const total = saleData.items.reduce((s,i)=>s+i.qty*i.price,0);
+      const html = buildReceiptHTML({
+        store:'PDV Web',
+        cnpj:'32.190.092/0001-06',
+        address:'Estr. Venceslau José de Medeiros, 1045 - Prata, Teresópolis - RJ',
+        datetime:new Date(),
+        items:saleData.items.map(i=>({code:i.code,name:i.name,qty:i.qty,unit:i.unit,price:i.price,total:i.qty*i.price})),
+        total,
+        method:'pix',
+        received:0,
+        change:0,
+        installments:'—'
+      });
+      const pr = window.open('', 'print');
+      pr.document.write(html); pr.document.close();
+      try{ pr.print(); }catch{}
+      saleData.items.length = 0;
+      selectedIndex = -1;
+      redraw();
+      refs.lastItem.textContent = '—';
+    }
+    try{ w.close(); }catch{}
+  });
+}
+
 /* ==== Busca dinâmica (modal de pesquisa) ==== */
 document.getElementById('search-input').addEventListener('input', ()=>{
   const list = searchByName(document.getElementById('search-input').value);
@@ -449,7 +795,7 @@ document.getElementById('search-input').addEventListener('input', () => {
   updateSearchHighlight();
 });
 
-// Enter confirma pagamento
+// Enter confirma pagamento no modal
 document.addEventListener('keydown', (e) => {
   if (refs.paymentDlg.open && e.key === 'Enter') {
     e.preventDefault();
