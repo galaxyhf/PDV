@@ -5,6 +5,12 @@ Permite simular operações de caixa com leitura de código de barras, busca de 
 
 ---
 
+## 🌐 Acesso Online
+
+Você pode acessar o sistema diretamente pelo link: [https://pdvweb.netlify.app/](https://pdvweb.netlify.app/)
+
+---
+
 ## Funcionalidades
 
 - Catálogo de produtos (mock) com código de barras, nome, unidade e preço.
