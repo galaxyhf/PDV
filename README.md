@@ -45,7 +45,4 @@ A interface é dividida em dois painéis:
 - **Setas ↑/↓** → Navegar entre itens  
 - **Delete** → Remover item selecionado  
 
----
-
-## Estrutura do Projeto
 
