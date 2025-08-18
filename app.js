@@ -130,13 +130,6 @@ document.addEventListener('keydown', (e)=>{
   }
 });
 
-// Fechar modal de cadastro
-const cancelProductBtn = document.getElementById("cancel-product");
-cancelProductBtn.addEventListener("click", (e) => {
-  e.preventDefault();
-  addProductDialog.close(); 
-});
-
 // Submit do formulário -> salva no catálogo e persiste
 if(refs.addProductForm){
   refs.addProductForm.addEventListener('submit', (e)=>{
