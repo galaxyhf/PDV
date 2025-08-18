@@ -2,16 +2,26 @@
 const CATALOG_KEY = 'pdv_catalog_v1';
 
 const defaultCatalog = [
-  { code: '7891000367263', name: 'Arroz Premium 5kg', unit: 'PC', price: 30.90 },
-  { code: '7894900011517', name: 'Feijão Carioca 1kg', unit: 'PC', price: 7.49 },
-  { code: '7891000100105', name: 'Açúcar Refinado 1kg', unit: 'PC', price: 4.39 },
-  { code: '7891910000197', name: 'Café Torrado 500g', unit: 'PC', price: 23.99 },
-  { code: '7892840810052', name: 'Leite Integral Piracanjuba 1L', unit: 'UN', price: 5.89 },
-  { code: '7891910000234', name: 'Biscoito Maizena 400g', unit: 'PC', price: 5.59 },
-  { code: '7891000012348', name: 'Óleo de Soja 900ml', unit: 'UN', price: 6.29 },
-  { code: '7891234512345', name: 'Chocolate 90g', unit: 'PC', price: 4.99 },
-  { code: '7899876500012', name: 'Refrigerante 2L', unit: 'UN', price: 9.49 },
-  { code: '7896543210007', name: 'Detergente 500ml', unit: 'UN', price: 2.59 }
+  { code: '7896004000015', name: 'Arroz Branco Tipo 1 5kg', unit: 'PC', price: 27.99 },
+  { code: '7891910001118', name: 'Feijão Preto 1kg', unit: 'PC', price: 8.49 },
+  { code: '7891000300106', name: 'Açúcar Cristal 1kg', unit: 'PC', price: 4.29 },
+  { code: '7894900017120', name: 'Café Tradicional 500g', unit: 'PC', price: 18.90 },
+  { code: '7891150022340', name: 'Leite Integral Piracanjuba 1L', unit: 'UN', price: 5.49 },
+  { code: '7891025100105', name: 'Farinha de Trigo 1kg', unit: 'PC', price: 6.19 },
+  { code: '7896543100456', name: 'Macarrão Parafuso 500g', unit: 'PC', price: 4.59 },
+  { code: '7891234500457', name: 'Molho de Tomate Sachê 340g', unit: 'PC', price: 3.29 },
+  { code: '7894900011197', name: 'Óleo de Soja 900ml', unit: 'UN', price: 6.59 },
+  { code: '7897779300021', name: 'Sal Refinado 1kg', unit: 'PC', price: 2.79 },
+  { code: '7896004710250', name: 'Biscoito Recheado Chocolate 140g', unit: 'PC', price: 3.99 },
+  { code: '7891132000121', name: 'Refrigerante Cola 2L', unit: 'UN', price: 10.99 },
+  { code: '7894900034125', name: 'Suco Laranja Caixa 1L', unit: 'UN', price: 6.49 },
+  { code: '7896543200789', name: 'Detergente Líquido 500ml', unit: 'UN', price: 2.39 },
+  { code: '7891150098112', name: 'Sabão em Pó 1kg', unit: 'PC', price: 12.90 },
+  { code: '7894321987654', name: 'Papel Higiênico 12x30m', unit: 'FD', price: 15.99 },
+  { code: '7897418529630', name: 'Shampoo 400ml', unit: 'UN', price: 14.50 },
+  { code: '7899632587412', name: 'Creme Dental 90g', unit: 'UN', price: 4.79 },
+  { code: '7898521479635', name: 'Sabonete 85g', unit: 'UN', price: 2.29 },
+  { code: '7899513574862', name: 'Margarina 500g', unit: 'PC', price: 7.49 }
 ];
 
 function loadCatalog(){
@@ -118,6 +128,13 @@ document.addEventListener('keydown', (e)=>{
     e.preventDefault();
     openAddProduct();
   }
+});
+
+// Fechar modal de cadastro
+const cancelProductBtn = document.getElementById("cancel-product");
+cancelProductBtn.addEventListener("click", (e) => {
+  e.preventDefault();
+  addProductDialog.close(); 
 });
 
 // Submit do formulário -> salva no catálogo e persiste
