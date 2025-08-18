@@ -8,7 +8,10 @@
 </head>
 <body>
   <header class="app-header">
-    <h1>PDV Web</h1>
+    <h1>
+      PDV Web
+      <span class="authors">Desenvolvido por Caio Silva & Thyago Azevedo</span>
+    </h1>
     <div class="status">
       <span id="clock" aria-live="polite"></span>
       <span class="separator">•</span>
@@ -163,7 +166,7 @@
         <input id="prod-price" type="number" step="0.01" min="0" required />
       </div>
       <footer>
-        <button class="btn secondary" value="cancel">Cancelar (Esc)</button>
+        <button class="btn secondary" id="cancel-add-product" type="button" value="cancel">Cancelar (Esc)</button>
         <button class="btn success" id="save-product" value="confirm">Salvar (Enter)</button>
       </footer>
     </form>

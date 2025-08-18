@@ -130,6 +130,14 @@ document.addEventListener('keydown', (e)=>{
   }
 });
 
+const cancelAddProductBtn = document.getElementById('cancel-add-product');
+if (cancelAddProductBtn) {
+  cancelAddProductBtn.addEventListener('click', () => {
+    try { refs.addProductDlg.close(); } 
+    catch { closeDialog(refs.addProductDlg); }
+  });
+}
+
 // Submit do formulário -> salva no catálogo e persiste
 if(refs.addProductForm){
   refs.addProductForm.addEventListener('submit', (e)=>{

@@ -122,3 +122,16 @@ dialog{border:none; border-radius:12px; padding:0; background:#ffffff; color:var
 .method-current{margin:6px 0 12px 0; color:var(--muted)}
 
 .items tr.selected { outline: 2px solid #3b82f6; background: rgba(59,130,246,.08); }
+
+.app-header h1 {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.app-header .authors {
+  font-size: 0.5em;
+  font-weight: normal;
+  font-style: italic;
+  color: #555555a2;
+}
